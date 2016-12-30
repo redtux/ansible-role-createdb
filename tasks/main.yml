@@ -1,0 +1,32 @@
+- block:
+  - name: Fetch mysql password
+    mysql_password_ini: path={{ createdb_config }} user={{ createdb_user }}
+    register: mysql_db_data
+
+  - name: Fact | createdb_password
+    set_fact: createdb_password={{ mysql_db_data.password }}
+
+  - name: Create database
+    mysql_db: name={{ createdb_database }} encoding=utf8 collation=utf8_unicode_ci
+
+  - name: Create user
+    mysql_user: 
+      name: "{{ createdb_user }}"
+      password: "{{ createdb_password }}"
+      host: "{{ createdb_host }}"
+      priv: "{{ createdb_database }}.*:ALL"
+      append_privs: true
+
+  - name: Write mysql credentials
+    ini_file: dest={{ createdb_config }} section=client option={{ item.option }} value={{ item.value }} create=yes
+    with_items:
+      - option: host
+        value: "{{ createdb_host }}"
+      - option: user
+        value: "{{ createdb_user }}"
+      - option: password
+        value: "{{ createdb_password }}"
+
+  when: createdb_dbs == 'mysql'
+
+
